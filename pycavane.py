@@ -143,7 +143,7 @@ def main():
             url = url_open(source_get, data=[('key', key), ('host', value),
                    ('vars', '&id=9555&subs=,ES,EN&tipo=s&amp;sub_pre=ES')])
             # before http are ugly chars
-            url = url.split('&id')[0].__repr__()
+            url = url[url.find('http:'):].split('&id')[0]
             print '%s: %s' % (value, url)
 
         # Download Subtitle
