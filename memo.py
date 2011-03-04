@@ -32,7 +32,6 @@ class Memoized(object):
                 with open(self.cache_dir+os.sep+self.cache_file) as fd:
                     self.__cache__ = pickle.load(fd)
             except Exception, error:
-                print 'FACK '*4, error
                 self.__cache__ = {}
         return self.__cache__
 
@@ -43,9 +42,9 @@ class Memoized(object):
             time_key = key+'_time'
             print key
 
-            # 10 minutes cache
+            # an hour cache
             if key not in self.cache or \
-                 self.cache[time_key] < time.time()-60*10:
+                 self.cache[time_key] < time.time()-60*60:
 
                 value = self.func(*args)
                 self.cache[key] = value
