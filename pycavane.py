@@ -31,15 +31,17 @@ captcha_re = re.compile('<img src="(http\:\/\/.*megaupload\.com\/'\
                                            'gencap.php\?.*\.gif)"')
 fname_re = re.compile('font-size:22px; font-weight:bold;">(.*?)</font><br>')
 
+megalink_re = re.compile('<a href="(.*?)" class="down_butt1"onclick')
+
 source_re = re.compile("goSource\('([a-zA-Z0-9]*?)','([a-zA-Z]*?)'\)")
 
 def retry(callback):
     ''' Retry decorator '''
-    def deco(url, data=None, filename=None):
+    def deco(url, data=None, filename=None, handle=False):
         tried = 0
         while tried < 3:
             try:
-                return callback(url, data, filename)
+                return callback(url, data, filename, handle)
             except Exception, error:
                 tried += 1
                 time.sleep(1)
@@ -47,12 +49,16 @@ def retry(callback):
     return deco
 
 @retry
-def url_open(url, data=None, filename=None):
+def url_open(url, data=None, filename=None, handle=False):
     if data:
         request = urllib2.Request(url, urllib.urlencode(data), headers)
     else:
         request = urllib2.Request(url, headers=headers)
     rc = urllib2.urlopen(request)
+
+    if handle:
+        return rc
+
     if filename:
         local = open(filename, 'wb')
 
@@ -94,6 +100,32 @@ def get_episodes(seasson):
     episodes = episode_re.findall(url_open(episodes_url % seasson[0]))
     return episodes
 
+def get_megalink(link):
+    megalink = megalink_re.findall(url_open(link))
+    if megalink:
+        time.sleep(45)
+        return megalink[0]
+    return None
+
+def get_direct_links(episode, host=None):
+    data = url_open(player_url % episode[0])
+    hosts = []
+    for key, value in source_re.findall(data):
+        if not host or value == host:
+            url = url_open(source_get, data=[('key', key), ('host', value),
+                   ('vars', '&id=9555&subs=,ES,EN&tipo=s&amp;sub_pre=ES')])
+            # before http are ugly chars
+            url = url[url.find('http:'):].split('&id')[0]
+
+            if host:
+                return (value, url)
+            hosts.append((value, url))
+    return hosts
+
+def get_subtitle(episode, lang='ES', filename=None):
+    if filename:
+        filename += '.srt'
+    return url_open(sub_url % (episode[0], lang), filename=filename)
 
 def main():
     lang = 'ES'
@@ -138,13 +170,8 @@ def main():
         print 'Subtitle', sub_url % (episode[0], lang)
         print
 
-        data = url_open(player_url % episode[0])
-        for key, value in source_re.findall(data):
-            url = url_open(source_get, data=[('key', key), ('host', value),
-                   ('vars', '&id=9555&subs=,ES,EN&tipo=s&amp;sub_pre=ES')])
-            # before http are ugly chars
-            url = url[url.find('http:'):].split('&id')[0]
-            print '%s: %s' % (value, url)
+        for host, url in get_direct_links(episode):
+            print '%s: %s' % (host, url)
 
         # Download Subtitle
         #url_open(sub_url % (episode[0], lang), filename=filename+'.srt')
