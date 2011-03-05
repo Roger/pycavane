@@ -19,39 +19,54 @@ from threading import Thread
 class MegaFile(Thread):
     def __init__ (self, url, cachedir):
         Thread.__init__(self)
-        self.url = pycavane.get_megalink(url)
+        self.url = url
         self.filename = url.rsplit('/', 1)[1]
         self.cachedir = cachedir
-        self.downloaded_size = 0
+        self.cache_file = self.cachedir+'/'+self.filename
         self.released = False
+        self.running = True
+
+    @property
+    def size(self):
+        size = 0
+        if os.path.exists(self.cache_file):
+            size = os.path.getsize(self.cache_file)
+        return size
 
     def read(self, offset, size):
         fusqlogger.dump('offset: "%s" size: "%s"' % (offset, size), 'READ')
-        while offset+size > self.downloaded_size:
+        while offset+size > self.size:
+            # EOF
+            if not self.running:
+                return ''
             time.sleep(1)
             fusqlogger.dump('offset: "%s" size: "%s"' % \
-                    (offset+size, self.downloaded_size), 'WAIT')
+                    (offset+size, self.size), 'WAIT')
 
-        fd = open(self.cachedir+'/'+self.filename)
-        fd.seek(offset)
-        data = fd.read(size)
-        fd.close()
+        with open(self.cachedir+'/'+self.filename) as fd:
+            fd.seek(offset)
+            data = fd.read(size)
         return data
 
     def run(self):
-        handle = pycavane.url_open(self.url, handle=True)
-        fd = open(self.cachedir+'/'+self.filename, 'w')
+        if not os.path.exists(self.cache_file):
+            url = pycavane.get_megalink(self.url)
+            handle = pycavane.url_open(url, handle=True)
+            fd = open(self.cachedir+'/'+self.filename, 'w')
 
-        while True:
-            if self.released:
-                break
-            data = handle.read(1024)
-            if not data:
-                fd.close()
-                break
-            fd.write(data)
-            fd.flush()
-            self.downloaded_size += len(data)
+            while True:
+                if self.released:
+                    # Remove file from cache if released
+                    # before finish the download
+                    os.remove(self.cachedir+'/'+self.filename)
+                    break
+                data = handle.read(1024)
+                if not data:
+                    fd.close()
+                    break
+                fd.write(data)
+                fd.flush()
+        self.running = False
 
 
 fuse.fuse_python_api = (0, 2)
@@ -118,6 +133,7 @@ class FuCavane(fuse.Fuse):
     def get_seassons(self, serie):
         return pycavane.get_seassons([serie])
 
+    @Memoized
     def get_subtitle(self, serie):
         return pycavane.get_subtitle([serie])
 
@@ -169,6 +185,12 @@ class FuCavane(fuse.Fuse):
 
     @fusqlogger.log()
     def open(self, path, flags):
+        if path[-3:] == 'mp4':
+            episode = self.series[path[:-4]]
+            if episode not in self.episodes:
+                ret =  self.get_direct_link(episode)
+                self.episodes[episode] = MegaFile(ret, self.cache)
+                self.episodes[episode].start()
         return 0
 
     @fusqlogger.log()
@@ -179,9 +201,7 @@ class FuCavane(fuse.Fuse):
             handle = self.get_subtitle(episode)
         else:
             if episode not in self.episodes:
-                ret =  self.get_direct_link(episode)
-                self.episodes[episode] = MegaFile(ret, self.cache)
-                self.episodes[episode].start()
+                raise Exception, 'WTF?'
             handle = self.episodes[episode]
             return handle.read(offset, size)
 
@@ -277,6 +297,7 @@ class FuCavane(fuse.Fuse):
     def release(self, path, fh=None):
         if path[-3:] == 'mp4':
             episode = self.series[path[:-4]]
+            # TODO: handle multiple opens
             if episode in self.episodes:
                 self.episodes[episode].released = True
                 del(self.episodes[episode])
