@@ -40,7 +40,6 @@ class Memoized(object):
         try:
             key = str(args)
             time_key = key+'_time'
-            print key
 
             # an hour cache
             if key not in self.cache or \
