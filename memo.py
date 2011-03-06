@@ -38,12 +38,13 @@ class Memoized(object):
 
     def __call__(self, *args):
         try:
-            key = str(args)
+            # dont want to use "self" as key
+            key = str(args[1:])
             time_key = key+'_time'
 
             # an hour cache
-            if key not in self.cache or \
-                 self.cache[time_key] < time.time()-60*60:
+            if key not in self.cache: # or \
+                 #self.cache[time_key] < time.time()-60*60:
 
                 value = self.func(*args)
                 self.cache[key] = value
@@ -56,7 +57,7 @@ class Memoized(object):
             # Better to not cache than to blow up entirely.
             return self.func(*args)
 
-        return self.cache[str(args)]
+        return self.cache[key]
 
     def __repr__(self):
         """Return the function's docstring."""
