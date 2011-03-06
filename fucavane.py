@@ -3,6 +3,7 @@
 
 import os
 import time
+import shutil
 
 from errno import *
 from stat import *
@@ -22,9 +23,15 @@ class MegaFile(Thread):
         self.url = url
         self.filename = url.rsplit('/', 1)[1]
         self.cachedir = cachedir
-        self.cache_file = self.cachedir+'/'+self.filename
         self.released = False
         self.running = True
+
+    @property
+    def cache_file(self):
+        filename = self.cachedir+'/'+self.filename
+        if os.path.exists(filename+'.mp4'):
+            return filename+'.mp4'
+        return filename
 
     @property
     def size(self):
@@ -43,7 +50,7 @@ class MegaFile(Thread):
             fusqlogger.dump('offset: "%s" size: "%s"' % \
                     (offset+size, self.size), 'WAIT')
 
-        with open(self.cachedir+'/'+self.filename) as fd:
+        with open(self.cache_file) as fd:
             fd.seek(offset)
             data = fd.read(size)
         return data
@@ -52,16 +59,17 @@ class MegaFile(Thread):
         if not os.path.exists(self.cache_file):
             url = pycavane.get_megalink(self.url)
             handle = pycavane.url_open(url, handle=True)
-            fd = open(self.cachedir+'/'+self.filename, 'w')
+            fd = open(self.cache_file, 'w')
 
             while True:
                 if self.released:
                     # Remove file from cache if released
                     # before finish the download
-                    os.remove(self.cachedir+'/'+self.filename)
+                    os.remove(self.cache_file)
                     break
                 data = handle.read(1024)
                 if not data:
+                    shutil.move(self.cache_file, self.cache_file+'.mp4')
                     fd.close()
                     break
                 fd.write(data)
