@@ -267,7 +267,7 @@ class FuCavane(fuse.Fuse):
         if len(spath) == 3 and spath[2]:
             episodes = self.get_episodes(self.series[path])
             for i in episodes:
-                name = i[2].strip()
+                name = '%03i - %s' %(int(i[1]), i[2].strip())
                 new_path = path+'/'+name
                 if new_path not in self.paths:
                     self.paths.append(new_path+'.mp4')
