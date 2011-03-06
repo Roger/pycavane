@@ -10,9 +10,7 @@ headers = {'User-Agent': 'Mozilla/5.0 (X11; U; Linux x86_64; en-US; '\
 
 host = 'http://www.cuevana.tv'
 
-movies_url = host+'/list_peliculas.php?list=2&'+host+\
-                    '/peliculas/lista/letra=%s&page=%s'
-
+movies_url = host+'/peliculas/lista/letra=%s&page=%s'
 series_url = host+'/series/'
 seassons_url = host+'/list_search_id.php?serie=%s'
 episodes_url = host+'/list_search_id.php?temporada=%s'
@@ -22,8 +20,8 @@ player_movie_url = host+'/player/source?id=%s&subs=,ES,EN&onstart=yes&sub_pre=ES
 player_season_url = player_movie_url+'&tipo=s'
 source_get = host+'/player/source_get'
 
-sub_url = host+'/files/s/sub/%s_%s.srt'
-
+sub_url_movie = host+'/files/sub/%s_%s.srt'
+sub_url_show = host+'/files/s/sub/%s_%s.srt'
 
 series_re = re.compile('serieslist.push\(\{id:([0-9]*),nombre:"(.*?)"\}\);')
 seasson_re = re.compile('<li onclick=\'listSeries\(2,"([0-9]*)"\)\'>(.*?)</li>')
@@ -31,7 +29,7 @@ episode_re = re.compile('<li onclick=\'listSeries\(3,"([0-9]*)"\)\'>'\
                         '<span class=\'nume\'>([0-9]*)</span>(.*?)</li>')
 
 movies_re = re.compile(r'<tr class=\'row[1-2]\'>.*?<div class=\'tit\'><a '\
-              'href=\'(/peliculas/[0-9]*?/.*?/)\'>(.*?)</a></div>.*?<div '\
+              'href=\'/peliculas/([0-9]*?)/.*?/\'>(.*?)</a></div>.*?<div '\
               'class=\'font11\'>(.*?)<div class=\'reparto\'>', re.DOTALL)
 
 mega_id_re = re.compile('goSource\((.*?)\',\'megaupload\'\)')
@@ -146,10 +144,14 @@ def get_direct_links(episode, host=None, movie=False):
             hosts.append((value, url))
     return hosts
 
-def get_subtitle(episode, lang='ES', filename=None):
+def get_subtitle(episode, lang='ES', filename=None, movie=False):
     if filename:
         filename += '.srt'
-    return url_open(sub_url % (episode[0], lang), filename=filename)
+    if movie:
+        url = sub_url_movie
+    else:
+        url = sub_url_show
+    return url_open(url % (episode[0], lang), filename=filename)
 
 def main():
     lang = 'ES'
