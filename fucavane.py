@@ -4,6 +4,7 @@
 import os
 import time
 import shutil
+import string
 
 from errno import *
 from stat import *
@@ -115,21 +116,30 @@ class FuCavane(fuse.Fuse):
         self.file_metadata = Metadata(file_mode, False)
 
         # Dictionary mapping inode_path -> (size, is_directory)
-        self.paths = ['/']
+        self.paths = ['/', '/shows', '/movies']
 
 
     def main(self):
         Memoized.set_cache_dir(self.cache)
 
-        # Fill with all tables as folders
+        # Fill with all series as folders
         for serie in self.get_series():
             # TODO: better path sanitize
             serie_name = serie[1].replace('/', '|')
-            serie_path = "/" + serie_name
+            serie_path = "/shows/" + serie_name
 
             self.paths.append(serie_path)
 
             self.series[serie_path] = serie[0]
+
+        for letter in string.uppercase:
+            cat_path = "/movies/" + letter
+            self.paths.append(cat_path)
+            self.series[cat_path] = letter
+        cat_path = "/movies/#"
+        self.paths.append(cat_path)
+        self.series[cat_path] = 'num'
+
 
         return fuse.Fuse.main(self)
 
@@ -142,16 +152,21 @@ class FuCavane(fuse.Fuse):
         return pycavane.get_seassons([serie])
 
     @Memoized
-    def get_subtitle(self, serie):
-        return pycavane.get_subtitle([serie])
+    def get_subtitle(self, serie, is_movie):
+        return pycavane.get_subtitle([serie], movie=is_movie)
 
     @Memoized
     def get_episodes(self, seasson):
         return pycavane.get_episodes([seasson])
 
     @Memoized
-    def get_direct_link(self, episode):
-        return pycavane.get_direct_links([episode], 'megaupload')[1]
+    def get_movies(self, letter):
+        return pycavane.get_movies(letter)
+
+    @Memoized
+    def get_direct_link(self, episode, is_movie=False):
+        return pycavane.get_direct_links([episode],
+                host='megaupload', movie=is_movie)[1]
 
     @Memoized
     def get_file_size(self, episode):
@@ -174,17 +189,13 @@ class FuCavane(fuse.Fuse):
     def getattr(self, path):
         spath = path.split("/")
 
-        is_dir = len(spath) != 4
+        is_dir = 'show' in path and len(spath) < 5 or len(spath) < 4
 
         if path in self.paths:
             if is_dir:
                 result = self.dir_metadata
             else:
                 result = self.file_metadata
-                #result.st_size = 1024*1024
-                #if path[-3:] == 'mp4':
-                    #episode = self.series[path[:-4]]
-                    #result.st_size = self.get_file_size(episode)
         else:
             result = -ENOENT
 
@@ -196,7 +207,8 @@ class FuCavane(fuse.Fuse):
         if path[-3:] == 'mp4':
             episode = self.series[path[:-4]]
             if episode not in self.episodes:
-                ret =  self.get_direct_link(episode)
+                is_movie = 'movies' in path
+                ret =  self.get_direct_link(episode, is_movie)
                 self.episodes[episode] = MegaFile(ret, self.cache)
                 self.episodes[episode].start()
         return 0
@@ -205,13 +217,17 @@ class FuCavane(fuse.Fuse):
     def read(self, path, size, offset):
         episode = self.series[path[:-4]]
 
+        is_movie = 'movies' in path
+
         if path[-3:] == 'srt':
-            handle = self.get_subtitle(episode)
-        else:
+            handle = self.get_subtitle(episode, is_movie)
+        elif path[-3:] == 'mp4':
             if episode not in self.episodes:
                 raise Exception, 'WTF?'
             handle = self.episodes[episode]
             return handle.read(offset, size)
+        else:
+            return ''
 
         return handle[offset:offset+size]
 
@@ -261,7 +277,11 @@ class FuCavane(fuse.Fuse):
 
         spath = path.split('/')
 
-        if len(spath) == 2 and spath[1]:
+        _type = ''
+        if len(spath) > 1:
+            _type = spath[1]
+
+        if len(spath) == 3 and spath[2] and _type == 'shows':
             seassons = self.get_seassons(self.series[path])
             for i in seassons:
                 new_path = path+'/'+i[1]
@@ -272,10 +292,25 @@ class FuCavane(fuse.Fuse):
                 yield fuse.Direntry(i[1])
             return
 
-        if len(spath) == 3 and spath[2]:
+        if len(spath) == 3 and spath[2] and _type == 'movies':
+            for movie in self.get_movies(self.series[path]):
+                name = movie[1].strip()
+                # TODO: better sanitize
+                name = name.replace('/', '|')
+                new_path = path+'/'+name
+                if new_path not in self.paths:
+                    self.paths.append(new_path+'.mp4')
+                    self.paths.append(new_path+'.srt')
+                self.series[new_path] = movie[0]
+
+                yield fuse.Direntry(name+'.mp4')
+                yield fuse.Direntry(name+'.srt')
+            return
+
+        if len(spath) == 4 and spath[3] and _type == 'shows':
             episodes = self.get_episodes(self.series[path])
             for i in episodes:
-                name = '%03i - %s' %(int(i[1]), i[2].strip())
+                name = '%02i - %s' %(int(i[1]), i[2].strip())
                 new_path = path+'/'+name
                 if new_path not in self.paths:
                     self.paths.append(new_path+'.mp4')
@@ -297,7 +332,6 @@ class FuCavane(fuse.Fuse):
 
                 if name not in result:
                     result.append(name)
-
         for i in result:
             yield fuse.Direntry(i)
 
