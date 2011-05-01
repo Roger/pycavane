@@ -15,6 +15,7 @@ class Memoized(object):
     """
 
     cache_dir = ''
+    life_time = 60
     __cache__ = None
 
     @classmethod
@@ -43,8 +44,8 @@ class Memoized(object):
             time_key = key+'_time'
 
             # an hour cache
-            if key not in self.cache: # or \
-                 #self.cache[time_key] < time.time()-60*60:
+            if key not in self.cache or \
+                 self.cache[time_key] < time.time()-60*60:
 
                 value = self.func(*args)
                 self.cache[key] = value
