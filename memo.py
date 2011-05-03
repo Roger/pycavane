@@ -37,17 +37,17 @@ class Memoized(object):
         return self.__cache__
 
 
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
         try:
             # dont want to use "self" as key
-            key = str(args[1:])
+            key = str(args[1:]) + str(kwargs)
             time_key = key+'_time'
 
             # an hour cache
             if key not in self.cache or \
-                 self.cache[time_key] < time.time()-60*60:
+                 self.cache[time_key] < time.time()-60*60*6:
 
-                value = self.func(*args)
+                value = self.func(*args, **kwargs)
                 self.cache[key] = value
                 self.cache[time_key] = time.time()
                 with open(self.cache_dir+os.sep+self.cache_file, 'w') as fd:
@@ -56,7 +56,7 @@ class Memoized(object):
         except TypeError:
             # uncachable -- for instance, passing a list as an argument.
             # Better to not cache than to blow up entirely.
-            return self.func(*args)
+            return self.func(*args, **kwargs)
 
         return self.cache[key]
 

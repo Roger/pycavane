@@ -26,7 +26,7 @@ sub_url_show = host+'/files/s/sub/%s_%s.srt'
 series_re = re.compile('serieslist.push\(\{id:([0-9]*),nombre:"(.*?)"\}\);')
 seasson_re = re.compile('<li onclick=\'listSeries\(2,"([0-9]*)"\)\'>(.*?)</li>')
 episode_re = re.compile('<li onclick=\'listSeries\(3,"([0-9]*)"\)\'>'\
-                        '<span class=\'nume\'>([0-9]*)</span>(.*?)</li>')
+                        '<span class=\'nume\'>([0-9]*)</span>\s?(.*?)</li>')
 
 movies_re = re.compile(r'<tr class=\'row[1-2]\'>.*?<div class=\'tit\'><a '\
               'href=\'/peliculas/([0-9]*?)/.*?/\'>(.*?)</a></div>.*?<div '\
@@ -37,8 +37,6 @@ mega_id_re = re.compile('goSource\((.*?)\',\'megaupload\'\)')
 captcha_re = re.compile('<img src="(http\:\/\/.*megaupload\.com\/'\
                                            'gencap.php\?.*\.gif)"')
 fname_re = re.compile('font-size:22px; font-weight:bold;">(.*?)</font><br>')
-
-megalink_re = re.compile('<a.*?href="(http://.*megaupload.*/files/.*?)"')
 
 source_re = re.compile("goSource\('([a-zA-Z0-9]*?)','([a-zA-Z]*?)'\)")
 
@@ -60,6 +58,26 @@ class Pycavane(object):
         return all_movies
 
     @Memoized
+    def episodes_by_season(self, show, season_name):
+        seasons = self.seasson_by_show(show)
+        for season in seasons:
+            if season[1] == season_name:
+                return self.get_episodes(season)
+
+    @Memoized
+    def seasson_by_show(self, name):
+        show = self.show_by_name(name)
+        if show:
+            return self.get_seassons(show)
+        return []
+
+    @Memoized
+    def show_by_name(self, name):
+        for show in self.get_shows():
+            if show[1] == name:
+                return show
+
+    @Memoized
     def get_shows(self, name=None):
         series = series_re.findall(url_open(series_url))
         if name:
@@ -76,13 +94,6 @@ class Pycavane(object):
     def get_episodes(self, seasson):
         episodes = episode_re.findall(url_open(episodes_url % seasson[0]))
         return episodes
-
-    def get_megalink(self, link):
-        megalink = megalink_re.findall(url_open(link))
-        if megalink:
-            time.sleep(45)
-            return megalink[0]
-        return None
 
     @Memoized
     def get_direct_links(self, episode, host=None, movie=False):
