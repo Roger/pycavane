@@ -5,9 +5,12 @@ from threading import Thread
 
 import logger
 import shutil
-from util import url_open
+from util import UrlOpen
+
 
 megalink_re = re.compile('<a.*?href="(http://.*megaupload.*/files/.*?)"')
+
+url_open = UrlOpen()
 
 
 class MegaFile(Thread):

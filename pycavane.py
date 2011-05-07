@@ -1,6 +1,6 @@
 import re
 
-from util import UrlOpener
+from util import UrlOpen
 from memo import Memoized
 
 host = 'http://www.cuevana.tv'
@@ -37,7 +37,8 @@ fname_re = re.compile('font-size:22px; font-weight:bold;">(.*?)</font><br>')
 source_re = re.compile("goSource\('([a-zA-Z0-9]*?)','([a-zA-Z]*?)'\)")
 
 # Setup a function with cookies support
-url_open = UrlOpener()
+url_open = UrlOpen()
+
 
 class Pycavane(object):
     def __init__(self, username=None, password=None,

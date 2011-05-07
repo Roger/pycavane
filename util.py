@@ -1,8 +1,9 @@
-import sys
 import time
 import urllib
 import urllib2
 import cookielib
+import functools
+
 
 class Singleton(object):
     '''Not really singleton but close
@@ -24,7 +25,9 @@ headers = {'User-Agent': 'Mozilla/5.0 (X11; U; Linux x86_64; en-US; '\
 
 def retry(callback):
     ''' Retry decorator '''
-    def deco(url, *args, **kwargs):
+
+    @functools.wraps(callback)
+    def deco(*args, **kwargs):
         tried = 0
         while tried < 10:
             try:
@@ -38,50 +41,48 @@ def retry(callback):
     return deco
 
 
-class UrlOpener(object):
+class UrlOpen(object):
     ''' An url opener with cookies support '''
     def __init__(self):
         self.setup_cookies()
 
     @retry
-    def __call__(url, data=None, filename=None, handle=False):
+    def __call__(self, url, data=None, filename=None, handle=False):
         if data:
             request = urllib2.Request(url, urllib.urlencode(data), headers)
         else:
             request = urllib2.Request(url, headers=headers)
-        rc = urllib2.urlopen(request)
 
+        rc = self.opener.open(request)
+
+        # return file handler only
         if handle:
             return rc
 
+        local = None
         if filename:
             local = open(filename, 'wb')
 
-        text = ''
-        size = 0
-        lastsize = 0
+        ret = ''
 
         while True:
             buffer = rc.read(1024)
             if buffer == '':
                 break
 
-            if filename:
-                size += len(buffer)
+            if local:
                 local.write(buffer)
-                if (size - 1024*4) > lastsize:
-                    sys.stdout.write(str(size/1024) + "kb downloaded...\r")
-                    sys.stdout.flush()
-                    lastsize = size
             else:
-                text += buffer
-        if filename:
+                ret += buffer
+
+        if local:
             local.close()
-        return text
+            return
+
+        return ret
 
     def setup_cookies(self):
         ''' Setup cookies in urllib2 '''
         jar = cookielib.CookieJar()
         handler = urllib2.HTTPCookieProcessor(jar)
-        opener = urllib2.build_opener(handler)
-        urllib2.install_opener(opener)
+        self.opener = urllib2.build_opener(handler)
