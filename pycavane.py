@@ -1,10 +1,6 @@
 import re
-import sys
-import time
-import urllib
-import urllib2
 
-from util import url_open
+from util import UrlOpener
 from memo import Memoized
 
 host = 'http://www.cuevana.tv'
@@ -40,13 +36,29 @@ fname_re = re.compile('font-size:22px; font-weight:bold;">(.*?)</font><br>')
 
 source_re = re.compile("goSource\('([a-zA-Z0-9]*?)','([a-zA-Z]*?)'\)")
 
+# Setup a function with cookies support
+url_open = UrlOpener()
 
 class Pycavane(object):
-    def __init__(self, cache_dir='/tmp/', lifetime=20):
+    def __init__(self, username=None, password=None,
+                      cache_dir='/tmp/', lifetime=20):
         Memoized.set_cache_dir(cache_dir)
+
+        self.logged = False
+
+        if username:
+            data = {'usuario': username, 'password': password,
+                            'ingresar': True, 'reordame': 'si'}
+            ret = url_open('http://www.cuevana.tv/login_get.php', data=data)
+            if username not in ret:
+                raise Exception, 'Login fail, check username and password'
+
+            self.logged = True
 
     @Memoized
     def get_movies(self, letter='num', page=0):
+        if not self.logged:
+            raise Exception, 'Must be logged to retrive movies'
         all_movies = []
         while True:
             page += 1
