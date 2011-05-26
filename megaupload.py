@@ -19,8 +19,10 @@ class MegaFile(Thread):
         self.url = url
         self.filename = url.rsplit('/', 1)[1]
         self.cachedir = cachedir
-        self.released = False
+        self._released = False
         self.running = True
+
+        self._last_read = 0
 
     def get_megalink(self, link):
         megalink = megalink_re.findall(url_open(link))
@@ -28,6 +30,12 @@ class MegaFile(Thread):
             time.sleep(45)
             return megalink[0]
         return None
+
+    def open(self):
+        self._released = False
+
+    def release(self):
+        self._released = True
 
     @property
     def cache_file(self):
@@ -45,6 +53,7 @@ class MegaFile(Thread):
 
     def read(self, offset, size):
         logger.log('offset: "%s" size: "%s"' % (offset, size), 'READ')
+        self._last_read = time.time()
         while offset+size > self.size:
             # EOF
             if not self.running:
@@ -61,13 +70,17 @@ class MegaFile(Thread):
     def run(self):
         if not os.path.exists(self.cache_file):
             url = self.get_megalink(self.url)
+            if not url:
+                logger.log('Cant retrieve megaupload url')
+                return
             handle = url_open(url, handle=True)
             fd = open(self.cache_file, 'w')
 
             while True:
-                if self.released:
+                if self._released and self._last_read < time.time()-30:
                     # Remove file from cache if released
                     # before finish the download
+                    # and 30 seconds happend from last read
                     os.remove(self.cache_file)
                     break
                 data = handle.read(1024)
