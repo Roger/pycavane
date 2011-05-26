@@ -61,7 +61,7 @@ class Pycavane(object):
     Provides a simple api to obtain data from cuevana
     """
 
-    def __init__(self, username=None, password=None, 
+    def __init__(self, username=None, password=None,
             cache_dir='/tmp/', cache_lifetime=60*60*6):
         """
         Does the inicialization and login of the website.
@@ -99,6 +99,24 @@ class Pycavane(object):
                 break
             all_movies += moov
         return all_movies
+
+    def movie_by_name(self, name):
+        """
+        Returns a tuple with (id, name) of the movie
+        based on the name.
+        """
+
+        movies = self.search_title(name)
+        found = False
+        for movie in movies:
+            if movie[1] == name:
+                found = movie
+                break
+
+        assert found != False
+
+        return (movie[0], movie[1])
+
 
     @Memoized
     def episodes_by_season(self, show, season_name):
