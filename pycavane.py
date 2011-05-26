@@ -61,12 +61,14 @@ class Pycavane(object):
     Provides a simple api to obtain data from cuevana
     """
 
-    def __init__(self, username=None, password=None, cache_dir='/tmp/'):
+    def __init__(self, username=None, password=None, 
+            cache_dir='/tmp/', cache_lifetime=60*60*6):
         """
         Does the inicialization and login of the website.
         """
 
         Memoized.set_cache_dir(cache_dir)
+        Memoized.set_lifetime(cache_lifetime)
 
         self.logged = False
 

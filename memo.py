@@ -15,8 +15,6 @@ try:
 except ImportError:
     import pickle
 
-CACHE_TIME = 60 * 60 * 6
-
 
 class Memoized(object):
     """
@@ -27,13 +25,25 @@ class Memoized(object):
     The content of cache it's loadead and saved on a pickle file.
     """
 
-    cache_dir = ''
-    life_time = 60
+    cache_dir = '/tmp/'
+    lifetime = 60 * 60 * 6
     __cache__ = None
 
     @classmethod
     def set_cache_dir(self, cache_dir):
+        """
+        setup cache directory
+        default: /tmp/
+        """
         self.cache_dir = cache_dir
+
+    @classmethod
+    def set_lifetime(self, lifetime):
+        """
+        setup lifetime
+        default: 216006 (6 minutes)
+        """
+        self.lifetime = lifetime
 
     def __init__(self, func):
         self.func = func
@@ -41,6 +51,9 @@ class Memoized(object):
 
     @property
     def cache(self):
+        """
+        Open and unpickle the cache file or returns an empty dict if it fail
+        """
         if self.__cache__ == None:
             try:
                 with open(self.cache_dir + os.sep + self.cache_file) as fd:
@@ -50,13 +63,16 @@ class Memoized(object):
         return self.__cache__
 
     def __call__(self, *args, **kwargs):
+        """
+        Decorator function
+        """
         try:
             # dont want to use "self" as key
             key = str(args[1:]) + str(kwargs)
             time_key = key + '_time'
 
             if key not in self.cache or \
-                 self.cache[time_key] < time.time() - CACHE_TIME:
+                 self.cache[time_key] < time.time() - self.lifetime:
 
                 value = self.func(*args, **kwargs)
                 self.cache[key] = value
