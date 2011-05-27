@@ -175,36 +175,20 @@ class Pycavane(object):
     @Memoized
     def get_episode_info(self, episode):
         """
-        Returns a tuple with (image, description, cast, genere, language) of
-        the show with the given episode.
+        Returns a tuple with (image, episode_name, description,
+        cast, genere, language) of the show with the given episode.
         """
 
         page_data = URL_OPEN(SHOW_INFO_URL % episode[0])
 
+        name = episode[1]
         image = HOST + SHOW_INFO_IMAGE_RE.findall(page_data)[0]
         desc = SHOW_INFO_DESCRIPTION_RE.findall(page_data)[0].strip()
         cast = SHOW_INFO_CAST_RE.findall(page_data)
         genere = SHOW_INFO_GENERE_RE.findall(page_data)[0].strip()
         language = SHOW_INFO_LANGUAGE_RE.findall(page_data)[0].strip()
 
-        return (image, desc, cast, genere, language)
-
-    @Memoized
-    def get_episode_info(self, episode):
-        """
-        Returns a tuple with (image, description, cast, genere, language) of
-        the show with the given episode.
-        """
-
-        page_data = URL_OPEN(SHOW_INFO_URL % episode[0])
-
-        image = HOST + SHOW_INFO_IMAGE_RE.findall(page_data)[0]
-        desc = SHOW_INFO_DESCRIPTION_RE.findall(page_data)[0].strip()
-        cast = SHOW_INFO_CAST_RE.findall(page_data)
-        genere = SHOW_INFO_GENERE_RE.findall(page_data)[0].strip()
-        language = SHOW_INFO_LANGUAGE_RE.findall(page_data)[0].strip()
-
-        return (image, desc, cast, genere, language)
+        return (image, name, desc, cast, genere, language)
 
     @Memoized
     def get_seassons(self, serie):
