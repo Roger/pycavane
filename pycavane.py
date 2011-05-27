@@ -181,7 +181,7 @@ class Pycavane(object):
 
         page_data = URL_OPEN(SHOW_INFO_URL % episode[0])
 
-        name = episode[1]
+        name = episode[2]
         image = HOST + SHOW_INFO_IMAGE_RE.findall(page_data)[0]
         desc = SHOW_INFO_DESCRIPTION_RE.findall(page_data)[0].strip()
         cast = SHOW_INFO_CAST_RE.findall(page_data)
