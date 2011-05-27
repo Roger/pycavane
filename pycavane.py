@@ -18,7 +18,8 @@ from memo import Memoized
 HOST = 'http://www.cuevana.tv'
 
 MOVIES_URL = HOST + '/peliculas/lista/letra=%s&page=%s'
-SERIES_URL = HOST + '/series/'
+SHOWS_URL = HOST + '/series/'
+SHOW_INFO_URL = HOST + '/list_search_info.php?episodio=%s'
 SEASSONS_URL = HOST + '/list_search_id.php?serie=%s'
 EPISODES_URL = HOST + '/list_search_id.php?temporada=%s'
 
@@ -32,8 +33,7 @@ SUB_URL_SHOW = HOST + '/files/s/sub/%s_%s.srt'
 
 SEARCH_URL = HOST + '/buscar/?q=%s&cat=titulo'
 
-
-SERIES_RE = re.compile('serieslist.push\(\{id:([0-9]*),nombre:"(.*?)"\}\);')
+SHOWS_RE = re.compile('serieslist.push\(\{id:([0-9]*),nombre:"(.*?)"\}\);')
 SEASSON_RE = re.compile('<li onclick=\'listSeries\(2,"([0-9]*)"\)\'>(.*?)</li>')
 EPISODE_RE = re.compile('<li onclick=\'listSeries\(3,"([0-9]*)"\)\'>'\
                         '<span class=\'nume\'>([0-9]*)</span>\s?(.*?)</li>')
@@ -54,6 +54,12 @@ SEARCH_RE = re.compile('<div class=\'tit\'><a href=\'(.*?)\'>' \
                        '(.*?) \(.*\)</a></div>')
 
 URL_OPEN = UrlOpen()  # Setup a function with cookies support
+
+SHOW_INFO_IMAGE_RE = re.compile('<img src="(.*?)" border="0" />')
+SHOW_INFO_DESCRIPTION_RE = re.compile('<div>(.*)<div class="sep"></div>', re.DOTALL)
+SHOW_INFO_CAST_RE = re.compile('<a href=\'/buscar/\?q=.*?&cat=actor\'>(.*?)</a>')
+SHOW_INFO_GENERE_RE = re.compile('<b>Género:</b>(.*?)<br />')
+SHOW_INFO_LANGUAGE_RE = re.compile('<b>Idioma:</b>(.*?)<br />')
 
 
 class Pycavane(object):
@@ -160,11 +166,28 @@ class Pycavane(object):
         currently avaliable shows.
         """
 
-        series = SERIES_RE.findall(URL_OPEN(SERIES_URL))
+        series = SHOWS_RE.findall(URL_OPEN(SHOWS_URL))
         if name:
             series = [serie for serie in series \
                       if name.lower() in serie[1].lower()]
         return series
+
+    @Memoized
+    def get_episode_info(self, episode):
+        """
+        Returns a tuple with (image, description, cast, genere, language) of
+        the show with the given episode.
+        """
+
+        page_data = URL_OPEN(SHOW_INFO_URL % episode[0])
+
+        image = HOST + SHOW_INFO_IMAGE_RE.findall(page_data)[0]
+        desc = SHOW_INFO_DESCRIPTION_RE.findall(page_data)[0].strip()
+        cast = SHOW_INFO_CAST_RE.findall(page_data)
+        genere = SHOW_INFO_GENERE_RE.findall(page_data)[0].strip()
+        language = SHOW_INFO_LANGUAGE_RE.findall(page_data)[0].strip()
+
+        return (image, desc, cast, genere, language)
 
     @Memoized
     def get_seassons(self, serie):
