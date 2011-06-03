@@ -36,7 +36,7 @@ SEARCH_URL = HOST + '/buscar/?q=%s&cat=titulo'
 SHOWS_RE = re.compile('serieslist.push\(\{id:([0-9]*),nombre:"(.*?)"\}\);')
 SEASSON_RE = re.compile('<li onclick=\'listSeries\(2,"([0-9]*)"\)\'>(.*?)</li>')
 EPISODE_RE = re.compile('<li onclick=\'listSeries\(3,"([0-9]*)"\)\'>'\
-                        '<span class=\'nume\'>([0-9]*)</span>\s?(.*?)</li>')
+                        '<span class=\'nume\'>(.*?)</span>\s?(.*?)</li>')
 
 MOVIES_RE = re.compile(r'<tr class=\'row[1-2]\'>.*?<div class=\'tit\'><a '\
               'href=\'/peliculas/([0-9]*?)/.*?/\'>(.*?)</a></div>.*?<div '\
