@@ -53,13 +53,15 @@ SOURCE_RE = re.compile("goSource\('([a-zA-Z0-9]*?)','([a-zA-Z]*?)'\)")
 SEARCH_RE = re.compile('<div class=\'tit\'><a href=\'(.*?)\'>' \
                        '(.*?) \(.*\)</a></div>')
 
-URL_OPEN = UrlOpen()  # Setup a function with cookies support
+MAYBE_MEANT = re.compile("Quizás quiso decir: <a href='.*?'>(.*?)</a>")
 
 SHOW_INFO_IMAGE_RE = re.compile('<img src="(.*?)" border="0" />')
 SHOW_INFO_DESCRIPTION_RE = re.compile('<div>(.*)<div class="sep"></div>', re.DOTALL)
 SHOW_INFO_CAST_RE = re.compile('<a href=\'/buscar/\?q=.*?&cat=actor\'>(.*?)</a>')
 SHOW_INFO_GENERE_RE = re.compile('<b>Género:</b>(.*?)<br />')
 SHOW_INFO_LANGUAGE_RE = re.compile('<b>Idioma:</b>(.*?)<br />')
+
+URL_OPEN = UrlOpen()  # Setup a function with cookies support
 
 
 class Pycavane(object):
@@ -255,11 +257,12 @@ class Pycavane(object):
         with the results of the search.
         """
 
-        result = []
+        search_list = []
 
         query = query.replace(" ", "+")
         page_data = URL_OPEN(SEARCH_URL % query)
         results = SEARCH_RE.findall(page_data)
+        maybe_meant = MAYBE_MEANT.findall(page_data)[0]
 
         for i in results:
             url = i[0].split("/")
@@ -267,6 +270,8 @@ class Pycavane(object):
             result_id = url[2]
             result_name = i[1]
 
-            result.append((result_id, result_name, result_is_movie))
+            search_list.append((result_id, result_name, result_is_movie))
+
+        result = (search_list, maybe_meant)
 
         return result
