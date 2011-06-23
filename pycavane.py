@@ -262,7 +262,9 @@ class Pycavane(object):
         query = query.replace(" ", "+")
         page_data = URL_OPEN(SEARCH_URL % query)
         results = SEARCH_RE.findall(page_data)
-        maybe_meant = MAYBE_MEANT.findall(page_data)[0]
+        maybe_meant = MAYBE_MEANT.findall(page_data)
+        if maybe_meant:
+            maybe_meant = maybe_meant[0]
 
         for i in results:
             url = i[0].split("/")
