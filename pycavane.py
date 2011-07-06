@@ -139,6 +139,17 @@ class Pycavane(object):
                 return self.get_episodes(season)
 
     @Memoized
+    def episode_by_name(self, name, show, seasson):
+        episode_found = None
+
+        for episode in self.episodes_by_season(show, seasson):
+            if episode[2] == name:
+                episode_found = episode
+                break
+
+        return episode_found
+
+    @Memoized
     def seasson_by_show(self, name):
         """
         Retruns a list with (id, name) of the currently avaliable
