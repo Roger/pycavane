@@ -114,7 +114,7 @@ class Pycavane(object):
         based on the name.
         """
 
-        movies = self.search_title(name)
+        movies = self.search_title(name)[0]
         found = False
         for movie in movies:
             if movie[1] == name:
