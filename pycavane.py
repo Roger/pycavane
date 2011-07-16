@@ -30,6 +30,8 @@ SOURCE_GET = HOST + '/player/source_get'
 
 SUB_URL_MOVIE = HOST + '/files/sub/%s_%s.srt'
 SUB_URL_SHOW = HOST + '/files/s/sub/%s_%s.srt'
+SUB_URL_SHOW = HOST + '/download_sub?file=s/sub/%s_%s.srt'
+SUB_URL_MOVIE = HOST + '/download_sub?file=sub/%s_%s.srt'
 
 SEARCH_URL = HOST + '/buscar/?q=%s&cat=titulo'
 
