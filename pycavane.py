@@ -249,7 +249,6 @@ class Pycavane(object):
                 hosts.append((value, url))
         return hosts
 
-    @Memoized
     def get_subtitle(self, episode, lang='ES', filename=None, movie=False):
         """
         Downloads the subtitle of the episode.
