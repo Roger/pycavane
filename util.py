@@ -87,3 +87,5 @@ class UrlOpen(object):
         jar = cookielib.CookieJar()
         handler = urllib2.HTTPCookieProcessor(jar)
         self.opener = urllib2.build_opener(handler)
+
+url_open = UrlOpen()
