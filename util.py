@@ -52,11 +52,11 @@ class UrlOpen(object):
         self.setup_cookies()
 
     @retry
-    def __call__(self, url, data=None, filename=None, handle=False):
+    def __call__(self, url, data=None, filename=None, handle=False, cache=True):
         cache_key = url+str(data)
 
         cache_data = cached(cache_key)
-        if cache_data:
+        if cache and cache_data:
             return cache_data
 
         if data:
@@ -89,8 +89,9 @@ class UrlOpen(object):
         local.seek(0)
 
         data = local.read()
-        # just cache if not a file
-        cached(cache_key, data)
+        if cache:
+            # just cache if not a file
+            cached(cache_key, data)
 
         return data
 
