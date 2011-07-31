@@ -13,7 +13,7 @@ import re
 
 import downloaders
 from util import url_open
-from memo import Memoized
+from cached import Cached
 
 import urls
 
@@ -24,8 +24,10 @@ def setup(username=None, password=None,
     Does the inicialization and login of the website.
     """
 
-    Memoized.set_cache_dir(cache_dir)
-    Memoized.set_lifetime(cache_lifetime)
+    # Singleton
+    cached = Cached.get()
+    cached.set_cache_dir(cache_dir)
+    cached.set_lifetime(cache_lifetime)
 
     if username:
         data = {'usuario': username, 'password': password,
@@ -42,6 +44,8 @@ class Episode(object):
 
     _hosts_re = re.compile("goSource\('([a-zA-Z0-9]*?)','([a-zA-Z]*?)'\)")
 
+    _name_re = re.compile(
+            r'<div class="clearleft"></div>.*?</div>(.*?)</div>', re.DOTALL)
     _image_re = re.compile('<img src="(.*?)" border="0" />')
     _description_re = re.compile('<div>(.*)<div class="sep"></div>', re.DOTALL)
     _cast_re = re.compile('<a href=\'/buscar/\?q=.*?&cat=actor\'>(.*?)</a>')
@@ -50,10 +54,11 @@ class Episode(object):
 
     __info = None
     __hosts = None
+    __name = ''
 
     def __init__(self, id, number, name):
         self.id = id
-        self.name = name
+        self.__name = name
         self.number = number
 
         info_keys =  ['image', 'description', 'cast', 'genere', 'language']
@@ -61,7 +66,11 @@ class Episode(object):
         for info_key in info_keys:
             setattr(self.__class__, info_key,
                     property(lambda self, i=info_key:self.info[i]))
-
+    @property
+    def name(self):
+        if self.__name.endswith('...'):
+            return self.info['name']
+        return self.__name
 
     @property
     def info(self):
@@ -74,13 +83,14 @@ class Episode(object):
 
         page_data = url_open(urls.show_info % self.id)
 
+        name = self._name_re.findall(page_data)[0].strip()
         image = urls.host + self._image_re.findall(page_data)[0]
         description = self._description_re.findall(page_data)[0].strip()
         cast = self._cast_re.findall(page_data)
         genere = self._genere_re.findall(page_data)[0].strip()
         language = self._language_re.findall(page_data)[0].strip()
 
-        self.__info = {'image': image, 'description': description,
+        self.__info = {'name': name, 'image': image, 'description': description,
                 'cast': cast, 'genere': genere, 'language': language}
         return self.__info
 

@@ -8,6 +8,10 @@ import cookielib
 import functools
 from StringIO import StringIO
 
+from cached import Cached
+
+cached = Cached.get()
+
 HEADERS = {
     'User-Agent': 'User-Agent:Mozilla/5.0 (X11; Linux i686) AppleWebKit/535.1 '
                   '(KHTML, like Gecko) Chrome/13.0.772.0 Safari/535.1',
@@ -29,6 +33,8 @@ def retry(callback):
             try:
                 return callback(*args, **kwargs)
             except Exception, error:
+                # Try to fix problens with squid
+                urllib.urlcleanup()
                 tried += 1
                 time.sleep(1)
         error = 'Can\'t download\nerror: "%s"\n args: %s' % \
@@ -47,6 +53,12 @@ class UrlOpen(object):
 
     @retry
     def __call__(self, url, data=None, filename=None, handle=False):
+        cache_key = url+str(data)
+
+        cache_data = cached(cache_key)
+        if cache_data:
+            return cache_data
+
         if data:
             request = urllib2.Request(url, urllib.urlencode(data), HEADERS)
         else:
@@ -75,8 +87,12 @@ class UrlOpen(object):
             return
 
         local.seek(0)
-        #TODO: return a file like object
-        return local.read()
+
+        data = local.read()
+        # just cache if not a file
+        cached(cache_key, data)
+
+        return data
 
     def setup_cookies(self):
         """
