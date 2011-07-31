@@ -6,6 +6,7 @@ import urllib
 import urllib2
 import cookielib
 import functools
+from StringIO import StringIO
 
 HEADERS = {
     'User-Agent': 'User-Agent:Mozilla/5.0 (X11; Linux i686) AppleWebKit/535.1 '
@@ -57,27 +58,25 @@ class UrlOpen(object):
         if handle:
             return rc
 
-        local = None
         if filename:
             local = open(filename, 'wb')
-
-        ret = ''
+        else:
+            local = StringIO()
 
         while True:
             buffer = rc.read(1024)
             if buffer == '':
                 break
 
-            if local:
-                local.write(buffer)
-            else:
-                ret += buffer
+            local.write(buffer)
 
-        if local:
+        if filename:
             local.close()
             return
 
-        return ret
+        local.seek(0)
+        #TODO: return a file like object
+        return local.read()
 
     def setup_cookies(self):
         """
