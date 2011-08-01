@@ -119,7 +119,7 @@ class Episode(object):
 
         return self.__hosts
 
-    def get_subtitle(self, lang='ES', filename=None, movie=False):
+    def get_subtitle(self, lang='ES', filename=None):
         """
         Downloads the subtitle of the episode.
         """
