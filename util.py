@@ -7,6 +7,7 @@ import urllib2
 import cookielib
 import functools
 from StringIO import StringIO
+from unicodedata import normalize
 
 from cached import Cached
 
@@ -19,6 +20,25 @@ HEADERS = {
     'Accept': 'text/html,application/xhtml+xml,application/xml;'}
 
 RETRY_TIMES = 5
+
+
+def normalize_string(string):
+    """
+    Take a string and return a cleaned string ready to use for cuevana
+    """
+
+    repl_list = [(" ", "-"), (".", ""), (",", ""),
+                 ("'", ""), ("?", ""), ("$", ""),
+                 ("#", ""), ("*", ""), ("!", ""),
+                 (":", "")]
+
+    uni_str = unicode(string, "utf-8")
+    clean_str = normalize("NFKD", uni_str).encode("ASCII", "ignore").lower()
+
+    for combo in repl_list:
+        clean_str = clean_str.replace(combo[0], combo[1])
+
+    return clean_str
 
 
 def retry(callback):

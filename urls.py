@@ -1,6 +1,7 @@
 host = 'http://www.cuevana.tv'
 
 movies = host + '/peliculas/lista/letra=%s&page=%s'
+movie_info = host + '/peliculas/%s/%s/'
 shows = host + '/series/'
 show_info = host + '/list_search_info.php?episodio=%s'
 seasons = host + '/list_search_id.php?serie=%s'

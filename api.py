@@ -12,7 +12,7 @@ Contributor: j0hn <j0hn.com.ar@gmail.com>
 import re
 
 import downloaders
-from util import url_open
+from util import url_open, normalize_string
 from cached import Cached
 
 import urls
@@ -61,11 +61,12 @@ class Episode(object):
         self.__name = name
         self.number = number
 
-        info_keys =  ['image', 'description', 'cast', 'genere', 'language']
+        info_keys = ['image', 'description', 'cast', 'genere', 'language']
 
         for info_key in info_keys:
             setattr(self.__class__, info_key,
                     property(lambda self, i=info_key:self.info[i]))
+
     @property
     def name(self):
         if self.__name.endswith('...'):
@@ -94,7 +95,6 @@ class Episode(object):
                 'cast': cast, 'genere': genere, 'language': language}
         return self.__info
 
-
     @property
     def file_hosts(self):
         """
@@ -111,7 +111,7 @@ class Episode(object):
             class_name = name.title() + 'Host'
             if getattr(downloaders, class_name, None):
                 # if implemented file host instance it
-                host =  getattr(downloaders, class_name)(id)
+                host = getattr(downloaders, class_name)(id)
             else:
                 # else return a generic one
                 host = downloaders.FileHost(id, name=name)
@@ -141,7 +141,7 @@ class Episode(object):
             yield Episode(**episode.groupdict())
 
     def __repr__(self):
-        return '<Episode: id:"%s" number: "%s" name: "%s">' % \
+        return '<Episode: id: "%s" number: "%s" name: "%s">' % \
                               (self.id, self.number, self.name)
 
 
@@ -163,9 +163,8 @@ class Season(object):
         for season in self._search_re.finditer(data):
             yield Season(**season.groupdict())
 
-
     def __repr__(self):
-        return '<Season: id:"%s" name: "%s">' % (self.id, self.name)
+        return '<Season: id: "%s" name: "%s">' % (self.id, self.name)
 
 
 class Show(object):
@@ -176,14 +175,12 @@ class Show(object):
         self.id = id
         self.name = name
 
-
     @property
     def seasons(self):
         """
         Returns a list with Seasons
         """
         return Season.search(self)
-
 
     @classmethod
     def search(self, name=''):
@@ -199,6 +196,68 @@ class Show(object):
             if not name or name in show_dict['name'].lower():
                 yield Show(**show_dict)
 
+    def __repr__(self):
+        return '<Show: id: "%s" name: "%s">' % (self.id, self.name)
+
+
+class Movie(object):
+    _search_re = re.compile('<div class=\'tit\'>' \
+                            '<a href=\'/peliculas/(?P<id>[0-9]*)/.*?\'>' \
+                            '(?P<name>.*?) \((?P<year>[0-9]*)\)</a>' \
+                            '</div>.*?<div class=\'txt\'>' \
+                            '(?P<description>.*?)<div', re.DOTALL)
+    _description_re = re.compile('<td class="infolabel" valign="top">Sinopsis</td>.*?' \
+                                 '<td>(.+?)</td>', re.DOTALL)
+    __info = ""
+
+    def __init__(self, id, name, year=None, description=""):
+        self.id = id
+        self.name = name
+        self.year = year
+        self.__description = description
+
+    @property
+    def description(self):
+        if self.__description.endswith('...'):
+            return self.info['description']
+
+        return self.__description
+
+    @property
+    def normalized_name(self):
+        return normalize_string(self.name)
+
+    @property
+    def info(self):
+        """
+        Returns a dict with info about this movie
+        """
+
+        if self.__info:
+            return self.__info
+
+        page_data = url_open(urls.movie_info % (self.id, self.normalized_name))
+
+        description = self._description_re.findall(page_data)[0].strip()
+        # TODO: scrap the rest of the info
+
+        self.__info = {'description': description}
+        return self.__info
+
+    @classmethod
+    def search(self, query=""):
+        """
+        Returns a list with all the matched
+        movies searched using the query
+        """
+
+        query = query.lower().replace(' ', '+')
+
+        for movie in self._search_re.finditer(url_open(urls.search % query)):
+            movie_dict = movie.groupdict()
+            movie_dict['description'] = movie_dict['description'].strip()
+
+            yield Movie(**movie_dict)
 
     def __repr__(self):
-        return '<Show: id:"%s" name: "%s">' % (self.id, self.name)
+        return '<Movie id: "%s" name: "%s">' % (self.id, self.name)
