@@ -87,3 +87,10 @@ class UrlOpen(object):
         jar = cookielib.CookieJar()
         handler = urllib2.HTTPCookieProcessor(jar)
         self.opener = urllib2.build_opener(handler)
+
+    def add_headers(self, headers):
+        """
+        Add new headers.
+        `headers' argument has to be a diccionary.
+        """
+        self.opener.addheaders.extend(headers.items())
