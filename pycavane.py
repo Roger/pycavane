@@ -88,7 +88,7 @@ class Pycavane(object):
 
         self.logged = False
 
-    def login(username=None, password=None):
+    def login(self, username=None, password=None):
         if username:
             data = {'usuario': username, 'password': password,
                     'ingresar': True, 'recordarme': 'si'}
