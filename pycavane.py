@@ -63,6 +63,13 @@ SHOW_INFO_CAST_RE = re.compile('<a href=\'/buscar/\?q=.*?&cat=actor\'>(.*?)</a>'
 SHOW_INFO_GENERE_RE = re.compile('<b>Género:</b>(.*?)<br />')
 SHOW_INFO_LANGUAGE_RE = re.compile('<b>Idioma:</b>(.*?)<br />')
 
+# Favorites support
+FAVORITES_URL = HOST + '/user_fav.php'
+ADD_FAVORITES_URL = HOST + '/botlink_fav.php?id=%s&serie=%s'
+
+FAVORITE_SERIES_RE = re.compile('<a href=\'/series/[0-9]*/[^/]*/\'>([^<]*)</a>')
+FAVORITE_MOVIES_RE = re.compile('<a href=\'/peliculas/[0-9]*/[^/]*/\'>([^<]*)</a>')
+
 URL_OPEN = UrlOpen()  # Setup a function with cookies support
 
 
@@ -71,8 +78,7 @@ class Pycavane(object):
     Provides a simple api to obtain data from cuevana
     """
 
-    def __init__(self, username=None, password=None,
-            cache_dir='/tmp/', cache_lifetime=60*60*6):
+    def __init__(self, cache_dir='/tmp/', cache_lifetime=60*60*6):
         """
         Does the inicialization and login of the website.
         """
@@ -82,6 +88,7 @@ class Pycavane(object):
 
         self.logged = False
 
+    def login(username=None, password=None):
         if username:
             data = {'usuario': username, 'password': password,
                     'ingresar': True, 'recordarme': 'si'}
@@ -289,3 +296,35 @@ class Pycavane(object):
         result = (search_list, maybe_meant)
 
         return result
+
+    def get_favorite_series(self):
+        if not self.logged:
+            return []
+        rc = URL_OPEN(FAVORITES_URL, data={'tipo': 'serie'})
+        return FAVORITE_SERIES_RE.findall(URL_OPEN(FAVORITES_URL,
+                                                   data={'tipo': 'serie'}))
+
+    def get_favorite_movies(self):
+        if not self.logged:
+            return []
+
+        return FAVORITE_MOVIES_RE.findall(URL_OPEN(FAVORITES_URL,
+                                                   data={'tipo': 'pelicula'}))
+
+    def add_favorite(self, name, is_movie):
+        if is_movie:
+            idnum, _ = self.movie_by_name(name)
+            URL_OPEN(ADD_FAVORITES_URL % (idnum, 'false'))
+        else:
+            idnum, _ = self.show_by_name(name)
+            URL_OPEN(ADD_FAVORITES_URL % (idnum, 'true'))
+
+    def del_favorite(self, name, is_movie):
+        if is_movie:
+            idnum, _ = self.movie_by_name(name)
+            URL_OPEN(FAVORITES_URL,
+                     data={'tipo':'pelicula', 'eliminar':'true', 'id': idnum})
+        else:
+            idnum, _ = self.show_by_name(name)
+            URL_OPEN(FAVORITES_URL,
+                     data={'tipo':'serie', 'eliminar':'true', 'id': idnum})
