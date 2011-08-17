@@ -66,9 +66,20 @@ SHOW_INFO_LANGUAGE_RE = re.compile('<b>Idioma:</b>(.*?)<br />')
 # Favorites support
 FAVORITES_URL = HOST + '/user_fav.php'
 ADD_FAVORITES_URL = HOST + '/botlink_fav.php?id=%s&serie=%s'
-
-FAVORITE_SERIES_RE = re.compile('<a href=\'/series/[0-9]*/[^/]*/\'>([^<]*)</a>')
+FAVORITE_SHOWS_RE = re.compile('<a href=\'/series/[0-9]*/[^/]*/\'>([^<]*)</a>')
 FAVORITE_MOVIES_RE = re.compile('<a href=\'/peliculas/[0-9]*/[^/]*/\'>([^<]*)</a>')
+
+# Bookmarks support
+BOOKMARK_MOVIE_URL = HOST + '/user_marcadores.php?tipo=pelicula'
+BOOKMARK_MOVIE_ADD_URL = HOST + '/botlink_book.php?id=%s'
+BOOKMARK_MOVIE_DEL_URL = HOST + '/user_marcadores.php?tipo=pelicula&eliminar=true&id=%s'
+BOOKMARK_MOVIE_RE = re.compile('<a href=\'/peliculas/.+?>(.+?)</a>')
+
+BOOKMARK_SHOW_URL = HOST + '/user_marcadores.php'
+BOOKMARK_SHOW_ADD_URL = HOST + '/botlink_book.php?id=%s&serie=true'
+BOOKMARK_SHOW_DEL_URL = HOST + '/user_marcadores.php?tipo=serie&eliminar=true&id=%s'
+BOOKMARK_SHOW_RE = re.compile('<a href=\'/series/.+?>(.+?)</a>')
+
 
 URL_OPEN = UrlOpen()  # Setup a function with cookies support
 
@@ -301,7 +312,7 @@ class Pycavane(object):
         if not self.logged:
             return []
         rc = URL_OPEN(FAVORITES_URL, data={'tipo': 'serie'})
-        return FAVORITE_SERIES_RE.findall(URL_OPEN(FAVORITES_URL,
+        return FAVORITE_SHOWS_RE.findall(URL_OPEN(FAVORITES_URL,
                                                    data={'tipo': 'serie'}))
 
     def get_favorite_movies(self):
@@ -328,3 +339,25 @@ class Pycavane(object):
             idnum, _ = self.show_by_name(name)
             URL_OPEN(FAVORITES_URL,
                      data={'tipo':'serie', 'eliminar':'true', 'id': idnum})
+
+    def get_movie_bookmarks(self):
+        return BOOKMARK_MOVIE_RE.findall(URL_OPEN(BOOKMARK_MOVIE_URL))
+
+    def get_show_bookmarks(self):
+        return BOOKMARK_SHOW_RE.findall(URL_OPEN(BOOKMARK_SHOW_URL))
+
+    def add_bookmark(self, name, is_movie):
+        if is_movie:
+            idnum, _ = self.movie_by_name(name)
+            URL_OPEN(BOOKMARK_MOVIE_ADD_URL % idnum)
+        else:
+            pass
+            # TODO
+
+    def del_bookmark(self, name, is_movie):
+        if is_movie:
+            idnum, _ = self.movie_by_name(name)
+            URL_OPEN(BOOKMARK_MOVIE_DEL_URL % idnum)
+        else:
+            pass
+            # TODO
