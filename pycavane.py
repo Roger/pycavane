@@ -346,18 +346,18 @@ class Pycavane(object):
     def get_show_bookmarks(self):
         return BOOKMARK_SHOW_RE.findall(URL_OPEN(BOOKMARK_SHOW_URL))
 
-    def add_bookmark(self, name, is_movie):
-        if is_movie:
-            idnum, _ = self.movie_by_name(name)
-            URL_OPEN(BOOKMARK_MOVIE_ADD_URL % idnum)
-        else:
-            pass
-            # TODO
+    def add_movie_bookmark(self, name):
+        idnum, _ = self.movie_by_name(name)
+        URL_OPEN(BOOKMARK_MOVIE_ADD_URL % idnum)
 
-    def del_bookmark(self, name, is_movie):
-        if is_movie:
-            idnum, _ = self.movie_by_name(name)
-            URL_OPEN(BOOKMARK_MOVIE_DEL_URL % idnum)
-        else:
-            pass
-            # TODO
+    def del_movie_bookmark(self, name):
+        idnum, _ = self.movie_by_name(name)
+        URL_OPEN(BOOKMARK_MOVIE_DEL_URL % idnum)
+
+    def add_show_bookmark(self, name, show, seasson):
+        idnum, _, _ = self.episode_by_name(name, show, seasson)
+        URL_OPEN(BOOKMARK_SHOW_ADD_URL % idnum)
+
+    def del_show_bookmark(self, name, show, seasson):
+        idnum, _, _ = self.episode_by_name(name, show, seasson)
+        URL_OPEN(BOOKMARK_SHOW_DEL_URL % idnum)
