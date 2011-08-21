@@ -80,6 +80,11 @@ BOOKMARK_SHOW_ADD_URL = HOST + '/botlink_book.php?id=%s&serie=true'
 BOOKMARK_SHOW_DEL_URL = HOST + '/user_marcadores.php?tipo=serie&eliminar=true&id=%s'
 BOOKMARK_SHOW_RE = re.compile('<a href=\'/series/.+?>(.+?)</a>')
 
+NEXT_MOVIES_URL = HOST + "/peliculas/proximas/page=%d"
+NEXT_MOVIES_RE = re.compile(r'<tr class=\'row[1-2]\'>.*?<div class=\'tit\'><a '\
+              'href=\'/peliculas/([0-9]*?)/.*?/\'>(.*?)</a></div>.*?<div '\
+              'class=\'font11\'>(.*?)<div class=\'reparto\'>', re.DOTALL)
+
 
 URL_OPEN = UrlOpen()  # Setup a function with cookies support
 
@@ -111,7 +116,7 @@ class Pycavane(object):
     @Memoized
     def get_movies(self, letter='num', page=0):
         """
-        Returns a list with (id, name, descripttion) of all the movies starting
+        Returns a list with (id, name, description) of all the movies starting
         with `letter` or all the movies in case letter isn't set.
         """
 
@@ -126,6 +131,11 @@ class Pycavane(object):
                 break
             all_movies += moov
         return all_movies
+
+    @Memoized
+    def get_next_movies(self, page=1):
+        data = URL_OPEN(NEXT_MOVIES_URL % page)
+        return NEXT_MOVIES_RE.findall(data)
 
     def movie_by_name(self, name):
         """
