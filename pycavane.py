@@ -99,15 +99,14 @@ class Pycavane(object):
 
         self.logged = False
 
-    def login(self, username=None, password=None):
-        if username:
-            data = {'usuario': username, 'password': password,
-                    'ingresar': True, 'recordarme': 'si'}
-            ret = URL_OPEN('http://www.cuevana.tv/login_get.php', data=data)
-            if username not in ret:
-                raise Exception('Login fail, check username and password')
+    def login(self, username, password):
+        data = {'usuario': username, 'password': password,
+                'ingresar': True, 'recordarme': 'si'}
+        ret = URL_OPEN('http://www.cuevana.tv/login_get.php', data=data)
+        if username not in ret:
+            raise Exception('Login fail, check username and password')
 
-            self.logged = True
+        self.logged = True
 
     @Memoized
     def get_movies(self, letter='num', page=0):
