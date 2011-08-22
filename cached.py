@@ -25,9 +25,11 @@ class Cached(Singleton):
     """
 
     cache_dir = '/tmp/'
-    lifetime = 60 * 60 * 6
+    lifetime = 60 * 60  # An hour in seconds
     __cache__ = None
 
+    def __init__(self):
+        Singleton.__init__(self)
 
     def set_cache_dir(self, cache_dir):
         """
@@ -38,13 +40,10 @@ class Cached(Singleton):
 
     def set_lifetime(self, lifetime):
         """
-        setup lifetime
-        default: 216006 (6 minutes)
+        setup lifetime in seconds
+        default: 3600 (1 hour)
         """
         self.lifetime = lifetime
-
-    def __init__(self):
-        Singleton.__init__(self)
 
     @property
     def filename(self):
@@ -66,7 +65,7 @@ class Cached(Singleton):
 
     def __call__(self, key, value=None):
         """
-        Cache Function, if value it's None just try to return 
+        Cache Function, if value it's None just try to return
         from cache or None if it dosn't exists.
 
         else set that value in cache
