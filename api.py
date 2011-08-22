@@ -182,6 +182,10 @@ class Show(object):
         """
         return Season.search(self)
 
+    @property
+    def description(self):
+        raise NotImplementedError
+
     @classmethod
     def search(self, name=''):
         """
